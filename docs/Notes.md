@@ -30,7 +30,7 @@ Given the rules of the `nogo` game, the following data structures will be used:
   * ```
     struct NogoPlayer {
            id: u8, // 0, or 1
-           strings: Vector<Point>,
+           strings: Vec<Point>,
            human: bool,
     }
     ```

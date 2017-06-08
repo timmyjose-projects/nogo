@@ -1,12 +1,9 @@
 extern crate nogo;
 
-use std::str::FromStr;
-
 use nogo::io;
-use nogo::game_logic::{self, validation};
+use nogo::game_logic;
 
 /// Game entry point
-
 fn main() {
     let args = io::get_game_arguments();
 
@@ -18,11 +15,15 @@ fn main() {
 }
 
 /// continue with the game specified in
-/// the save file
-fn continue_saved_game(args: Vec<String>) {}
+/// the save file, with proper validation
+/// of the file contents
+fn continue_saved_game(args: Vec<String>) {
+    
+}
 
 /// start a fresh game with the
-/// given specifications
+/// given specifications with relevant
+/// validation done
 fn start_new_game(args: Vec<String>) {
-    game_logic::start_new_game(&args[0], &args[1], &args[2], &args[3]);
+   game_logic::start_new_game(&args[0], &args[1], &args[2], &args[3]);
 }
