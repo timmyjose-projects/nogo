@@ -18,7 +18,7 @@ quite simply as follows:
 
 At each step of the game, the player (human or computer) will enter the `row` and `column` of the next move (that is, where to
 place the next piece in). Only a valid move will be accepted. Also note that the user must enter the `row` and `column` values
-using normal 1-based indexing.
+using normal 0-based indexing counting down from the top-left of the board. For instance, move `1 2` refers to the second row, third column (the top-left position of the board has coordinates `0 0`)
 
 
 ## Usage

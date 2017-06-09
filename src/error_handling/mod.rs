@@ -1,6 +1,8 @@
 /// This module is responsible for all error-handling related
 /// tasks
 
+pub mod validation;
+
 use std::io::{self, Write};
 use std::error::Error;
 use std::fmt;

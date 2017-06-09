@@ -3,6 +3,7 @@ extern crate nogo;
 use nogo::io;
 use nogo::game_logic;
 
+
 /// Game entry point
 fn main() {
     let args = io::get_game_arguments();
