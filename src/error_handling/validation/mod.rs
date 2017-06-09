@@ -9,6 +9,7 @@ use game_logic as gl;
 ///
 /// validate the command line arguments for a new
 /// game
+///
 pub fn validate_new_game_parameters<'a>
     (p1: &'a str,
      p2: &'a str,
@@ -80,12 +81,12 @@ fn validate_board_dimensions<'a>(height: &'a str, width: &'a str) -> eh::Result<
 /// Validate the player move against the existing
 /// state of the board
 pub fn validate_user_move(board: &gl::NogoBoard, mv: (i32, i32)) -> bool {
-    let coords = board.coords();
+    let points = board.liberties();
 
-    for coord in coords.iter() {
-        if *coord == mv {
-            return false;
+    for point in points.iter() {
+        if (point.x(), point.y()) == mv {
+            return true;
         }
     }
-    true
+    false
 }

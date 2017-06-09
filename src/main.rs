@@ -18,13 +18,12 @@ fn main() {
 /// continue with the game specified in
 /// the save file, with proper validation
 /// of the file contents
-fn continue_saved_game(args: Vec<String>) {
-    
-}
+fn continue_saved_game(args: Vec<String>) {}
 
 /// start a fresh game with the
 /// given specifications with relevant
 /// validation done
 fn start_new_game(args: Vec<String>) {
-   game_logic::start_new_game(&args[0], &args[1], &args[2], &args[3]);
+    println!("Welcome to nogo!\n");
+    game_logic::start_new_game(&args[0], &args[1], &args[2], &args[3]);
 }

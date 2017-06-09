@@ -29,8 +29,9 @@ pub fn get_player_move(board: &NogoBoard, player_name: char) -> (i32, i32) {
     let mut c;
 
     loop {
-        println!("Player {}> ", player_name);
-
+        print!("Player {}> ", player_name);
+        io::stdout().flush().unwrap();
+        
         let mut input = String::new();
 
         if io::stdin().read_line(&mut input).is_err() {
@@ -53,6 +54,14 @@ pub fn get_player_move(board: &NogoBoard, player_name: char) -> (i32, i32) {
             Err(_) => continue,
         };
 
+        if r >= board.height() || r < 0 {
+            continue;
+        }
+
+        if c >= board.width() || c < 0 {
+            continue;
+        }
+        
         // game-logic related validation here
         if !eh::validation::validate_user_move(board, (r, c)) {
             continue;
