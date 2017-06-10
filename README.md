@@ -405,6 +405,121 @@ Thank you for playing nogo!
 An example of saving the game during play, and then loading it again:
 
 
+$ cargo run c h 5 5
+    Finished dev [unoptimized + debuginfo] target(s) in 0.0 secs
+     Running `target/debug/nogo c h 5 5`
+Welcome to nogo!
+
+/-----\
+|.....|
+|.....|
+|.....|
+|.....|
+|.....|
+\-----/
+
+Player 0: 2 0
+/-----\
+|.....|
+|.....|
+|0....|
+|.....|
+|.....|
+\-----/
+
+Player X> 1 0
+/-----\
+|.....|
+|X....|
+|0....|
+|.....|
+|.....|
+\-----/
+
+Player 0: 4 1
+/-----\
+|.....|
+|X....|
+|0....|
+|.....|
+|.0...|
+\-----/
+
+Player X> 3 1
+/-----\
+|.....|
+|X....|
+|0....|
+|.X...|
+|.0...|
+\-----/
+
+Player 0: 0 1
+/-----\
+|.0...|
+|X....|
+|0....|
+|.X...|
+|.0...|
+\-----/
+
+Player X> 3 0
+/-----\
+|.0...|
+|X....|
+|0....|
+|XX...|
+|.0...|
+\-----/
+
+Player 0: 0 2
+/-----\
+|.00..|
+|X....|
+|0....|
+|XX...|
+|.0...|
+\-----/
+
+Player X> wsave_file.gm
+
+Finished saving current game state to file save_file.gm
+
+Thank you for playing nogo!
+
+$ cargo run save_file.gm
+    Finished dev [unoptimized + debuginfo] target(s) in 0.0 secs
+     Running `target/debug/nogo save_file.gm`
+Welcome to nogo again!
+
+/-----\
+|.00..|
+|X....|
+|0....|
+|XX...|
+|.0...|
+\-----/
+
+Player X> 2 1
+/-----\
+|.00..|
+|X....|
+|0X...|
+|XX...|
+|.0...|
+\-----/
+
+/-----\
+|.00..|
+|X....|
+|0X...|
+|XX...|
+|.0...|
+\-----/
+
+Player X wins!
+
+Thank you for playing nogo!
 
 
 
