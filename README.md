@@ -21,26 +21,48 @@ place the next piece in). Only a valid move will be accepted. Also note that the
 using normal 0-based indexing counting down from the top-left of the board. For instance, move `1 2` refers to the second row, third column (the top-left position of the board has coordinates `0 0`)
 
 
+
 ## Usage
 
 If running using Cargo,
 
 ```
-$ cargo run nogo p1type p2type height width
+$ cargo run nogo [ p1type p2type height width | filename ]
 ```
 
 where `p1type` and `p2type` can be `c` (computer) or `h` (human).
 
 `height` and `width` representing the size of the board represented as cells must be integrs between 4 and 1000 inclusive.
 
+`filename` refers to the full path of a previously saved game. The game will continue from where it left off, with the same player types as inferred from the saved game data.
 
 If running using the executable directly,
 
 ```
-$ nogo p1type p2type height width
+$ nogo [ p1type p2type height width | filename ]
 ```
 
 All terms have the same exact meaning as explained previously.
+
+
+
+## Saving/Loading a game
+
+At any point in time during gameplay, instead of entering the row and column of the next move, the player can enter `w[full-path-of-the-save-file]`. That is, `w` followed immediately by the full path of the file to save the game to with no spaces in between. For example:
+
+```
+Player X> w/opt/games/my_save_file.nogo
+```
+
+This, of course, means that for a game to be saved during play, at least one of the two players must be a human player.
+
+To load a saved game file, simply invoke it as shown in the `Usage` section:
+
+```
+$ cargo run nogo /opt/games/my_save_file.nogo
+```
+
+for instance. The game will pick up from where it left off.
 
 
 ## Sample gameplay
@@ -379,6 +401,9 @@ Player 0 wins!
 
 Thank you for playing nogo!
 ```
+
+An example of saving the game during play, and then loading it again:
+
 
 
 

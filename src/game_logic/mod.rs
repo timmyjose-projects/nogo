@@ -4,10 +4,18 @@ use std::collections::HashSet;
 use error_handling as eh;
 use io;
 
+
 /// Some game constants
 
 pub const MIN_BOARD_DIMENSION: i32 = 4;
 pub const MAX_BOARD_DIMENSION: i32 = 1000;
+
+pub const PLAYER_ZERO: char = '0';
+pub const PLAYER_ONE: char = 'X';
+
+
+/// Constants for computer-generated
+/// moves
 
 const IR0: i32 = 1;
 const IRX: i32 = 2;
@@ -21,15 +29,16 @@ const FX: i32 = 17;
 const MOD_FACTOR: i32 = 10000003;
 
 /// Game related data structures
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum PlayerType {
     HUMAN,
     COMPUTER,
+    NONE, // only for validation
 }
 
 pub enum PlayerInput {
     Point(i32, i32),
-    Quit(String),
+    Save(String),
 }
 
 /// the overall board -it holds state, but does
@@ -153,7 +162,7 @@ struct NogoPlayer {
     id: char,
     strings: Vec<NogoString>,
     captured: bool,
-    human: bool,
+    kind: PlayerType,
 }
 
 impl NogoPlayer {
@@ -162,15 +171,16 @@ impl NogoPlayer {
             id: id,
             strings: Vec::new(),
             captured: false,
-            human: match typ {
-                PlayerType::COMPUTER => false,
-                _ => true,
-            },
+            kind: typ,
         }
     }
 
-    fn id(&self) -> &char {
-        &self.id
+    fn id(&self) -> char {
+        self.id
+    }
+
+    fn kind(&self) -> &PlayerType {
+        &self.kind
     }
 
     // for each string of the current player, check
@@ -250,7 +260,7 @@ impl NogoString {
 }
 
 /// represents a point in the board
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub struct Point {
     x: i32,
     y: i32,
@@ -258,7 +268,7 @@ pub struct Point {
 }
 
 impl Point {
-    fn new(x: i32, y: i32, t: char) -> Self {
+    pub fn new(x: i32, y: i32, t: char) -> Self {
         Point { x: x, y: y, t: t }
     }
 
@@ -282,35 +292,111 @@ pub fn start_new_game<'a>(p1: &'a str, p2: &'a str, height: &'a str, width: &'a 
     match eh::validation::validate_new_game_parameters(p1, p2, height, width) {
         Ok((p1, p2, h, w)) => {
             let mut board = create_board(&p1, &p2, h, w);
-
-            loop {
-                display_board(&board);
-
-                {
-                    update_board('0', &p1, &mut board);
-                }
-
-                display_board(&board);
-
-                if let Some(player) = check_winner(&board) {
-                    println!("Player {} wins!", player);
-                    break;
-                }
-
-                {
-                    update_board('X', &p2, &mut board);
-                }
-
-                if let Some(player) = check_winner(&board) {
-                    println!("Player {} wins!", player);
-                    break;
-                }
-            }
-
-            println!("\nThank you for playing nogo!\n");
+            game_loop(&p1, &p2, PLAYER_ZERO, &mut board);
         }
 
         Err(e) => eh::exit_with_error(e),
+    }
+}
+
+/// factoring out the game loop so that it can be used with
+/// both a new game as well as continuing from a saved game
+fn game_loop(p1: &PlayerType, p2: &PlayerType, start_player: char, board: &mut NogoBoard) {
+    let first_player = start_player;
+    let first_player_type = if first_player == PLAYER_ZERO { p1 } else { p2 };
+
+    let second_player = if start_player == PLAYER_ZERO {
+        PLAYER_ONE
+    } else {
+        PLAYER_ZERO
+    };
+
+    let second_player_type = if second_player == PLAYER_ZERO { p1 } else { p2 };
+
+    loop {
+        display_board(&board);
+
+        {
+            update_board(first_player, &first_player_type, board);
+        }
+
+        display_board(&board);
+
+        check_winner(&board);
+
+        {
+            update_board(second_player, &second_player_type, board);
+        }
+
+        check_winner(&board);
+    }
+} // game loop
+
+
+/// Continue the game as saved in the save file.
+/// The way this will work is as follows -
+/// load the game metadata from the saved file,
+/// and recreate the state of the game from the
+/// board positions. Then continue the game
+/// from that juncture, with the player who had
+/// saved the file getting the first move in the
+/// new game
+pub fn continue_saved_game(save_file: &str) {
+    let mut game_data = Vec::new(); // just to satisfy the damned checker
+
+    match io::load_game_state(save_file) {
+        Ok(data) => game_data = data,
+        Err(e) => eh::exit_with_error(e),
+    }
+
+    // load the metadata
+    let metadata = &game_data[0]
+        .split_whitespace()
+        .collect::<Vec<_>>();
+
+    let (mut height, mut width, mut p1type, mut p2type, mut curr_player) =
+        (0, 0, PlayerType::NONE, PlayerType::NONE, ' ');
+
+    match io::parse_save_file_metadata(metadata) {
+        Ok((h, w, p1, p2, c)) => {
+            height = h;
+            width = w;
+            p1type = p1;
+            p2type = p2;
+            curr_player = c;
+        }
+
+        Err(e) => eh::exit_with_error(e),
+    }
+
+    // recreate the game state
+    let mut board = create_board(&p1type, &p2type, height, width);
+    let game_data = game_data.iter().skip(1).collect::<Vec<_>>();
+    let (mut player_0_strings, mut player_1_strings) = (Vec::new(), Vec::new());
+
+    match io::parse_player_strings_from_saved_file(&game_data) {
+        Ok((p1_strs, p2_strs)) => {
+            player_0_strings = p1_strs;
+            player_1_strings = p2_strs;
+        }
+        Err(e) => eh::exit_with_error(e),
+    }
+
+    // replay the game moves till the current point
+    replay_moves(PLAYER_ZERO, player_0_strings, &mut board);
+    replay_moves(PLAYER_ONE, player_1_strings, &mut board);
+
+    println!("Current board = {:?}", board);
+    // continue the game
+    game_loop(&p1type, &p2type, curr_player, &mut board);
+}
+
+
+fn replay_moves(player: char, moves: Vec<Point>, board: &mut NogoBoard) {
+    for mov in moves.iter() {
+        board.update_occupied(*mov);
+        // inefficiency here due to Rust's demented checker
+        board.player(player).unwrap().update_strings(*mov);
     }
 }
 
@@ -344,13 +430,13 @@ fn print_head(n: i32) {
 /// in one go so that a single pass will be sufficient
 /// to display the board
 fn print_rows(board: &NogoBoard) {
-    let coords = board.state.occupied();
+    let points = board.state.occupied();
 
     for i in 0..board.height {
         print!("|");
 
         for j in 0..board.width {
-            let point = coords.iter().find(|&&t| (t.x, t.y) == (i, j));
+            let point = points.iter().find(|&&t| (t.x, t.y) == (i, j));
             if let Some(val) = point {
                 print!("{}", val.t);
             } else {
@@ -376,14 +462,25 @@ fn print_tail(n: i32) {
 /// the player can be a computer or a human -
 /// accept input or generate moves accordingly
 fn update_board(p_id: char, p_type: &PlayerType, board: &mut NogoBoard) {
-    let (r, c) = match p_type {
-        &PlayerType::COMPUTER => get_next_valid_move(&board, p_id),
-        &PlayerType::HUMAN => io::get_player_move(&board, p_id),
-    };
+    if p_type == &PlayerType::HUMAN {
+        let player_input = io::get_player_move(&board, p_id);
 
+        match player_input {
+            PlayerInput::Save(path) => save_game_and_exit(&path, &board, p_id),
+            PlayerInput::Point(x, y) => update_board_with_move(p_id, x, y, board),
+        }
+    } else {
+        let (x, y) = get_next_valid_move(&board, p_id);
+        update_board_with_move(p_id, x, y, board);
+    }
+}
+
+
+fn update_board_with_move(p_id: char, r: i32, c: i32, board: &mut NogoBoard) {
     let point = Point::new(r, c, p_id);
 
     board.update_occupied(point.clone());
+
     {
         let player = board.player(p_id).unwrap();
 
@@ -391,6 +488,7 @@ fn update_board(p_id: char, p_type: &PlayerType, board: &mut NogoBoard) {
         player.update_strings(point);
     }
 }
+
 
 /// generate the moves for the computer as per
 /// the given algorithm. this will loop until
@@ -457,21 +555,78 @@ fn get_next_valid_move(board: &NogoBoard, p: char) -> (i32, i32) {
 }
 
 
+/// Save the game - first retrieve the current game state in proper form
+/// and then save it to the save file. Then quite the game gracefully
+fn save_game_and_exit(save_file: &str, board: &NogoBoard, curr_player: char) {
+    let game_data = get_current_game_state(&board, curr_player);
+
+    match io::save_game_state(save_file, game_data) {
+        Ok(_) => {
+            println!("\nFinished saving current game state to file {}", save_file);
+            eh::clean_exit();
+        }
+        Err(e) => eh::exit_with_error(e),
+    }
+}
+
+/// format of the save file -
+/// metadata: h w p1type p2type pturn
+/// newline
+/// board state
+/// newline
+fn get_current_game_state(board: &NogoBoard, curr_player: char) -> Vec<String> {
+    let mut data = Vec::new();
+
+    // metadata
+    data.push(format!("{} {} {} {} {}",
+                      board.height(),
+                      board.width(),
+                      if board.state.players().0.kind() == &PlayerType::HUMAN {
+                          'h'
+                      } else {
+                          'c'
+                      },
+                      if board.state.players().1.kind() == &PlayerType::HUMAN {
+                          'h'
+                      } else {
+                          'c'
+                      },
+                      curr_player));
+
+    // actual board (sans borders)
+    let mut line;
+    let points = board.state.occupied();
+
+    for i in 0..board.height {
+        line = String::new();
+        for j in 0..board.width {
+            let point = points.iter().find(|&&t| (t.x, t.y) == (i, j));
+            if let Some(val) = point {
+                line.push(val.t);
+            } else {
+                line.push('.');
+            }
+        }
+        data.push(line);
+    }
+    data
+}
+
+
+
 /// check if a winner can be established
 /// to do this, the basic rules of the game
 /// must be checked to see if any string
 /// of either player has been captured
-fn check_winner(board: &NogoBoard) -> Option<&char> {
+fn check_winner(board: &NogoBoard) {
     let free_points = board.state.liberties();
     let (p1, p2) = board.state.players();
 
     if p1.check_captured(&free_points) {
         display_board(&board);
-        return Some(p2.id());
+        println!("Player {} wins!", p1.id());
     } else if p2.check_captured(&free_points) {
         display_board(&board);
-        return Some(p1.id());
+        println!("Player {} wins!", p2.id());
     }
-
-    None
 }

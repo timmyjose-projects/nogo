@@ -19,6 +19,7 @@ pub enum NogoErrorKind {
     ErrorReadingGameFile,
     EOFWaitingForUserInput,
     SystemIOError,
+    ParsingError,
 }
 
 #[derive(Debug)]
@@ -90,6 +91,11 @@ impl<'a> NogoError<'a> {
                 error.status = 8;
                 error.general = "System IO error";
             }
+
+            NogoErrorKind::ParsingError => {
+                error.status = 9;
+                error.general = "Error while parsing value";
+            }
         }
 
         error
@@ -123,6 +129,13 @@ impl<'a> ::std::convert::From<io::Error> for NogoError<'a> {
     }
 }
 
+/// to allow conversion from std::num::ParseIntError into NogoError
+impl<'a> ::std::convert::From<::std::num::ParseIntError> for NogoError<'a> {
+    fn from(_: ::std::num::ParseIntError) -> Self {
+        NogoError::new(NogoErrorKind::ParsingError)
+    }
+}
+
 
 /// define an alias for NogoError for easier handling
 pub type Result<'a, T> = ::std::result::Result<T, NogoError<'a>>;
@@ -130,6 +143,13 @@ pub type Result<'a, T> = ::std::result::Result<T, NogoError<'a>>;
 
 /// The API
 
+/// normal exit
+pub fn clean_exit() {
+    println!("\nThank you for playing nogo!\n");
+    ::std::process::exit(0);
+}
+
+/// exit with error code
 pub fn exit_with_error(error: NogoError) {
     writeln!(io::stderr(), "Error: {}", error.description()).unwrap();
     ::std::process::exit(error.status());
