@@ -15,8 +15,10 @@ pub enum NogoErrorKind {
     IncorrectTypes,
     InvalidBoardDimensions,
     CantOpenFileForSaving,
+    CantOpenFileForReading,
     ErrorReadingGameFile,
     EOFWaitingForUserInput,
+    SystemIOError,
 }
 
 #[derive(Debug)]
@@ -64,7 +66,7 @@ impl<'a> NogoError<'a> {
                 error.general = "Invalid board dimension(s)";
             }
 
-            NogoErrorKind::CantOpenFileForSaving => {
+            NogoErrorKind::CantOpenFileForReading => {
                 error.status = 4;
                 error.general = "Unable to open save file";
             }
@@ -77,6 +79,16 @@ impl<'a> NogoError<'a> {
             NogoErrorKind::EOFWaitingForUserInput => {
                 error.status = 6;
                 error.general = "End of input from user";
+            }
+
+            NogoErrorKind::CantOpenFileForSaving => {
+                error.status = 7;
+                error.general = "Unable to open new save file";
+            }
+
+            NogoErrorKind::SystemIOError => {
+                error.status = 8;
+                error.general = "System IO error";
             }
         }
 
@@ -101,6 +113,13 @@ impl<'a> NogoError<'a> {
 
     pub fn set_specific(&mut self, msg: &'a str) {
         self.specific = msg;
+    }
+}
+
+/// to allow conversion from io::Error into NogoError
+impl<'a> ::std::convert::From<io::Error> for NogoError<'a> {
+    fn from(_: io::Error) -> Self {
+        NogoError::new(NogoErrorKind::SystemIOError)
     }
 }
 

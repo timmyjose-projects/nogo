@@ -16,6 +16,11 @@ pub enum PlayerType {
     COMPUTER,
 }
 
+pub enum PlayerInput {
+    Point(i32, i32),
+    Quit(String),
+}
+
 /// the overall board -it holds state, but does
 /// not really do any processng on its own
 #[derive(Debug)]
@@ -366,17 +371,78 @@ fn print_tail(n: i32) {
 
 /// update the board state with a player move
 fn update_board(p: char, board: &mut NogoBoard) {
-    let (r, c) = io::get_player_move(&board, p);
-    let point = Point::new(r, c, p);
+    let input = io::get_player_move(&board, p);
 
-    board.update_occupied(point.clone());
+    if let PlayerInput::Point(r, c) = input {
+        let point = Point::new(r, c, p);
 
-    {
-        let player = board.player(p).unwrap();
+        board.update_occupied(point.clone());
+        {
+            let player = board.player(p).unwrap();
 
-        // update the strings of the player
-        player.update_strings(point);
+            // update the strings of the player
+            player.update_strings(point);
+        }
+
+        return;
     }
+
+    if let PlayerInput::Quit(path) = input {
+        save_game_and_quit(p, path, board);
+    }
+}
+
+/// save the current state of the game
+/// into the given save file
+fn save_game_and_quit(curr_player: char, path: String, board: &NogoBoard) {
+    let save_data = get_game_state_data(curr_player, &board);
+
+    match io::save_game_state(path.clone(), save_data) {
+        Ok(_) => {
+            println!("Saved game state to file {:?}", path);
+            quit_game();
+        }
+        Err(_) => {
+            eh::exit_with_error(eh::construct_error("error while saving game state to file",
+                                                    eh::NogoErrorKind::CantOpenFileForSaving));
+        }
+    }
+}
+
+fn get_game_state_data(p: char, board: &NogoBoard) -> Vec<String> {
+    let mut data = Vec::new();
+
+    // first line - h w p rc0 cc0 cm0 rcX ccX cmX
+    data.push(format!("{} {} {} {} {} {} {} {} {}",
+                      board.height,
+                      board.width,
+                      if p == 'X' { 1 } else { 0 },
+                      0,
+                      0,
+                      0,
+                      0,
+                      0,
+                      0));
+
+    // the actual board state without the borders
+    let points = board.state.occupied();
+
+    for i in 0..board.height {
+        let mut line = String::new();
+
+        for j in 0..board.width {
+            let point = points.iter().find(|&&t| (t.x, t.y) == (i, j));
+
+            if let Some(val) = point {
+                line.push(val.t);
+            } else {
+                line.push('.');
+            }
+        }
+        data.push(line);
+    }
+
+    data
 }
 
 /// check if a winner can be established
@@ -396,4 +462,9 @@ fn check_winner(board: &NogoBoard) -> Option<&char> {
     }
 
     None
+}
+
+/// safe quit
+fn quit_game() {
+    ::std::process::exit(0);
 }

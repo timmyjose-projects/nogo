@@ -1,11 +1,13 @@
 /// All the I/O and visual rendering of the game
 /// is handled by this module
 
-use std::io::{self, Write};
+use std::io::{self, Write, BufWriter};
+use std::fs::File;
 use std::str::FromStr;
 
-use game_logic::NogoBoard;
+use game_logic as gl;
 use error_handling as eh;
+
 
 /// Get the command line arguments for the
 /// game
@@ -15,7 +17,8 @@ pub fn get_game_arguments() -> Vec<String> {
         .collect::<Vec<String>>()
 }
 
-
+/// display the correct usage of
+/// the game
 pub fn display_usage() {
     writeln!(io::stderr(),
              "Usage: nogo p1type p2type [height width | filename]")
@@ -25,10 +28,9 @@ pub fn display_usage() {
 }
 
 /// ensure that only a proper move is allowed
-pub fn get_player_move(board: &NogoBoard, player_name: char) -> (i32, i32) {
-    let mut r;
-    let mut c;
-
+/// in case the player has entered 'w' followed by a path
+/// then save the game and quit.
+pub fn get_player_move(board: &gl::NogoBoard, player_name: char) -> gl::PlayerInput {
     loop {
         print!("Player {}> ", player_name);
         io::stdout().flush().unwrap();
@@ -39,18 +41,40 @@ pub fn get_player_move(board: &NogoBoard, player_name: char) -> (i32, i32) {
             continue;
         }
 
-        let entries = input.trim().split_whitespace().collect::<Vec<_>>();
+        let entries = input.trim()
+            .split_whitespace()
+            .map(|s| s.to_string())
+            .collect::<Vec<_>>();
 
-        if entries.len() != 2 {
+        if entries.len() < 1 || entries.len() > 2 {
             continue;
         }
 
-        r = match i32::from_str(entries[0].trim()) {
+        // check if the player wants to save the game
+        if entries.len() == 1 {
+            let c = entries[0].chars().nth(0).unwrap();
+
+            match c {
+                'w' | 'W' => {
+                    let path = String::from(&entries[0][1..]);
+
+                    if path.len() == 0 {
+                        continue;
+                    } else {
+                        return gl::PlayerInput::Quit(path);
+                    }
+                }
+                _ => continue,
+            }
+        }
+
+        // check for (row, column) input
+        let r = match i32::from_str(entries[0].trim()) {
             Ok(val) => val,
             Err(_) => continue,
         };
 
-        c = match i32::from_str(entries[1].trim()) {
+        let c = match i32::from_str(entries[1].trim()) {
             Ok(val) => val,
             Err(_) => continue,
         };
@@ -68,6 +92,19 @@ pub fn get_player_move(board: &NogoBoard, player_name: char) -> (i32, i32) {
             continue;
         }
 
-        return (r, c);
+        return gl::PlayerInput::Point(r, c);
+    } // loop
+}
+
+
+/// save the game to the given save file
+pub fn save_game_state<'a>(path: String, data: Vec<String>) -> eh::Result<'a, ()> {
+    let mut writer = BufWriter::new(File::create(path)?);
+
+    for line in data.iter() {
+        writer.write_all(line.as_bytes())?;
+        writer.write_all(b"\n")?;
     }
+
+    Ok(())
 }
