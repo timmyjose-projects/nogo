@@ -100,9 +100,20 @@ impl NogoBoardState {
         (&self.players.0, &self.players.1)
     }
 
-    // retrieve all the current liberties
+    /// retrieve all the current liberties
+    /// custom retrieval since the default
+    /// HashSet implementation does not allow
+    /// us to check against a custom comparator
     pub fn liberties(&self) -> HashSet<Point> {
-        self.all_points.difference(&self.occupied_points).cloned().collect()
+        let mut free = HashSet::new();
+
+        for point in self.all_points.iter() {
+            if self.occupied().iter().find(|&&p| (p.x, p.y) == (point.x, point.y)).is_none() {
+                free.insert(*point);
+            }
+        }
+
+        free
     }
 
     /// retrieve the current occupied points
@@ -172,7 +183,6 @@ impl NogoPlayer {
     // has any liberties, then the string, and
     // therefore the player is captured
     fn check_captured(&self, free: &HashSet<Point>) -> bool {
-        println!("free = {:?}", free);
         for string in self.strings.iter() {
             let mut count = 0;
             for component in string.components.iter() {
@@ -196,7 +206,7 @@ impl NogoPlayer {
 
     fn find_point(&self, needle: &(i32, i32), haystack: &HashSet<Point>) -> bool {
         match haystack.iter().find(|p| (p.x, p.y) == *needle) {
-            Some(_) => { println!("found {:?} in free list!", needle); true },
+            Some(_) => true,
             _ => false,
         }
     }
@@ -281,7 +291,7 @@ pub fn start_new_game<'a>(p1: &'a str, p2: &'a str, height: &'a str, width: &'a 
                 }
             }
 
-            println!("\nThank you for playing nogo!");
+            println!("\nThank you for playing nogo!\n");
         }
 
         Err(e) => eh::exit_with_error(e),
@@ -357,8 +367,8 @@ fn print_tail(n: i32) {
 /// update the board state with a player move
 fn update_board(p: char, board: &mut NogoBoard) {
     let (r, c) = io::get_player_move(&board, p);
-
     let point = Point::new(r, c, p);
+
     board.update_occupied(point.clone());
 
     {
@@ -367,7 +377,6 @@ fn update_board(p: char, board: &mut NogoBoard) {
         // update the strings of the player
         player.update_strings(point);
     }
-
 }
 
 /// check if a winner can be established
@@ -379,9 +388,11 @@ fn check_winner(board: &NogoBoard) -> Option<&char> {
     let (p1, p2) = board.state.players();
 
     if p1.check_captured(&free_points) {
-        return Some(p1.id());
-    } else if p2.check_captured(&free_points) {
+        display_board(&board);
         return Some(p2.id());
+    } else if p2.check_captured(&free_points) {
+        display_board(&board);
+        return Some(p1.id());
     }
 
     None

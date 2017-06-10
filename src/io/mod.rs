@@ -20,7 +20,8 @@ pub fn display_usage() {
     writeln!(io::stderr(),
              "Usage: nogo p1type p2type [height width | filename]")
         .unwrap();
-    eh::exit_with_error(eh::NogoError::new(eh::NogoErrorKind::IncorrectNumberOfArgs));
+    eh::exit_with_error(eh::construct_error("insufficient number of arguments",
+                                            eh::NogoErrorKind::IncorrectNumberOfArgs));
 }
 
 /// ensure that only a proper move is allowed
@@ -31,7 +32,7 @@ pub fn get_player_move(board: &NogoBoard, player_name: char) -> (i32, i32) {
     loop {
         print!("Player {}> ", player_name);
         io::stdout().flush().unwrap();
-        
+
         let mut input = String::new();
 
         if io::stdin().read_line(&mut input).is_err() {
@@ -61,7 +62,7 @@ pub fn get_player_move(board: &NogoBoard, player_name: char) -> (i32, i32) {
         if c >= board.width() || c < 0 {
             continue;
         }
-        
+
         // game-logic related validation here
         if !eh::validation::validate_user_move(board, (r, c)) {
             continue;
