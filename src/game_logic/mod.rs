@@ -302,22 +302,16 @@ pub fn start_new_game<'a>(p1: &'a str, p2: &'a str, height: &'a str, width: &'a 
 /// factoring out the game loop so that it can be used with
 /// both a new game as well as continuing from a saved game
 fn game_loop(p1: &PlayerType, p2: &PlayerType, start_player: char, board: &mut NogoBoard) {
-    let first_player = start_player;
-    let first_player_type = if first_player == PLAYER_ZERO { p1 } else { p2 };
+    let first_player_type = if start_player == PLAYER_ZERO { p1 } else { p2 };
+    let second_player_type = if first_player_type == p1 { p2 } else { p1 };
 
-    let second_player = if start_player == PLAYER_ZERO {
-        PLAYER_ONE
-    } else {
-        PLAYER_ZERO
-    };
-
-    let second_player_type = if second_player == PLAYER_ZERO { p1 } else { p2 };
-
+    let other_player = if start_player == PLAYER_ZERO { PLAYER_ONE } else { PLAYER_ZERO };
+    
     loop {
         display_board(&board);
 
         {
-            update_board(first_player, &first_player_type, board);
+            update_board(start_player, &first_player_type, board);
         }
 
         display_board(&board);
@@ -325,7 +319,7 @@ fn game_loop(p1: &PlayerType, p2: &PlayerType, start_player: char, board: &mut N
         check_winner(&board);
 
         {
-            update_board(second_player, &second_player_type, board);
+            update_board(other_player, &second_player_type, board);
         }
 
         check_winner(&board);
@@ -386,7 +380,6 @@ pub fn continue_saved_game(save_file: &str) {
     replay_moves(PLAYER_ZERO, player_0_strings, &mut board);
     replay_moves(PLAYER_ONE, player_1_strings, &mut board);
 
-    println!("Current board = {:?}", board);
     // continue the game
     game_loop(&p1type, &p2type, curr_player, &mut board);
 }
@@ -624,9 +617,11 @@ fn check_winner(board: &NogoBoard) {
 
     if p1.check_captured(&free_points) {
         display_board(&board);
-        println!("Player {} wins!", p1.id());
+        println!("Player {} wins!", p2.id());
+        eh::clean_exit();
     } else if p2.check_captured(&free_points) {
         display_board(&board);
-        println!("Player {} wins!", p2.id());
+        println!("Player {} wins!", p1.id());
+        eh::clean_exit();
     }
 }

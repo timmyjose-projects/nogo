@@ -134,7 +134,7 @@ pub fn parse_save_file_metadata<'a>
         i32::from_str(&metadata[1])?,
         get_player_type(&metadata[2])?,
         get_player_type(&metadata[3])?,
-        get_current_player_id(&metadata[4])?))
+        metadata[4].chars().nth(0).unwrap()))
 }
 
 fn get_player_type<'a>(p: &str) -> eh::Result<'a, gl::PlayerType> {
