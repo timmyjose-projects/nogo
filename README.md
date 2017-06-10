@@ -47,6 +47,7 @@ All terms have the same exact meaning as explained previously.
 
 To assist in getting started out with the game, here is a small gameplay between a human (player 1) and the computer (player 2).
 
+```
 $ cargo run c h 5 5
     Finished dev [unoptimized + debuginfo] target(s) in 0.0 secs
      Running `target/debug/nogo c h 5 5`
@@ -135,10 +136,11 @@ Player X> 3 0
 Player X wins!
 
 Thank you for playing nogo!
-
+```
 
 Another example, this time with computer playing against computer:
 
+```
 $ cargo run c c 7 5
     Finished dev [unoptimized + debuginfo] target(s) in 0.0 secs
      Running `target/debug/nogo c c 7 5`
@@ -376,7 +378,7 @@ Player 0: 1 2
 Player 0 wins!
 
 Thank you for playing nogo!
-
+```
 
 
 
