@@ -77,7 +77,6 @@ fn validate_board_dimensions<'a>(height: &'a str, width: &'a str) -> eh::Result<
     Ok((h, w))
 }
 
-
 /// Validate the player move against the existing
 /// state of the board
 pub fn validate_user_move(board: &gl::NogoBoard, mv: (i32, i32)) -> bool {

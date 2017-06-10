@@ -1,7 +1,7 @@
 /// All the I/O and visual rendering of the game
 /// is handled by this module
 
-use std::io::{self, Write, BufWriter};
+use std::io::{self, Write, BufWriter, BufRead, BufReader};
 use std::fs::File;
 use std::str::FromStr;
 
@@ -28,9 +28,10 @@ pub fn display_usage() {
 }
 
 /// ensure that only a proper move is allowed
-/// in case the player has entered 'w' followed by a path
-/// then save the game and quit.
-pub fn get_player_move(board: &gl::NogoBoard, player_name: char) -> gl::PlayerInput {
+pub fn get_player_move(board: &gl::NogoBoard, player_name: char) -> (i32, i32) {
+    let mut r;
+    let mut c;
+
     loop {
         print!("Player {}> ", player_name);
         io::stdout().flush().unwrap();
@@ -46,35 +47,17 @@ pub fn get_player_move(board: &gl::NogoBoard, player_name: char) -> gl::PlayerIn
             .map(|s| s.to_string())
             .collect::<Vec<_>>();
 
-        if entries.len() < 1 || entries.len() > 2 {
+        if entries.len() != 2 {
             continue;
         }
 
-        // check if the player wants to save the game
-        if entries.len() == 1 {
-            let c = entries[0].chars().nth(0).unwrap();
-
-            match c {
-                'w' | 'W' => {
-                    let path = String::from(&entries[0][1..]);
-
-                    if path.len() == 0 {
-                        continue;
-                    } else {
-                        return gl::PlayerInput::Quit(path);
-                    }
-                }
-                _ => continue,
-            }
-        }
-
         // check for (row, column) input
-        let r = match i32::from_str(entries[0].trim()) {
+        r = match i32::from_str(entries[0].trim()) {
             Ok(val) => val,
             Err(_) => continue,
         };
 
-        let c = match i32::from_str(entries[1].trim()) {
+        c = match i32::from_str(entries[1].trim()) {
             Ok(val) => val,
             Err(_) => continue,
         };
@@ -92,7 +75,7 @@ pub fn get_player_move(board: &gl::NogoBoard, player_name: char) -> gl::PlayerIn
             continue;
         }
 
-        return gl::PlayerInput::Point(r, c);
+        return (r, c)
     } // loop
 }
 
@@ -107,4 +90,19 @@ pub fn save_game_state<'a>(path: String, data: Vec<String>) -> eh::Result<'a, ()
     }
 
     Ok(())
+}
+
+
+/// load the game state to a vector of lines
+pub fn load_game_state<'a>(path: &str) -> eh::Result<'a, Vec<String>> {
+    let mut data = Vec::new();
+    let reader = BufReader::new(File::open(path)?);
+
+    for line in reader.lines() {
+        let line = line?;
+
+        data.push(line);
+    }
+
+    Ok(data)
 }
