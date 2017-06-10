@@ -9,8 +9,19 @@ use io;
 pub const MIN_BOARD_DIMENSION: i32 = 4;
 pub const MAX_BOARD_DIMENSION: i32 = 1000;
 
+const IR0: i32 = 1;
+const IRX: i32 = 2;
+
+const IC0: i32 = 4;
+const ICX: i32 = 10;
+
+const F0: i32 = 29;
+const FX: i32 = 17;
+
+const MOD_FACTOR: i32 = 10000003;
+
 /// Game related data structures
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub enum PlayerType {
     HUMAN,
     COMPUTER,
@@ -270,13 +281,13 @@ pub fn start_new_game<'a>(p1: &'a str, p2: &'a str, height: &'a str, width: &'a 
     /// check if the arguments are correct
     match eh::validation::validate_new_game_parameters(p1, p2, height, width) {
         Ok((p1, p2, h, w)) => {
-            let mut board = create_board(p1, p2, h, w);
+            let mut board = create_board(&p1, &p2, h, w);
 
             loop {
                 display_board(&board);
 
                 {
-                    update_board('0', &mut board);
+                    update_board('0', &p1, &mut board);
                 }
 
                 display_board(&board);
@@ -287,7 +298,7 @@ pub fn start_new_game<'a>(p1: &'a str, p2: &'a str, height: &'a str, width: &'a 
                 }
 
                 {
-                    update_board('X', &mut board);
+                    update_board('X', &p2, &mut board);
                 }
 
                 if let Some(player) = check_winner(&board) {
@@ -304,22 +315,13 @@ pub fn start_new_game<'a>(p1: &'a str, p2: &'a str, height: &'a str, width: &'a 
 }
 
 
-
-///
-/// Load a saved game
-///
-pub fn continue_saved_game<'a>(save_file: &'a str) -> eh::Result<'a, ()> {
-    Ok(())
-}
-
-
 ///
 /// Game logic related functions
 ///
 
 /// create a fresh board with the given dimensions
-fn create_board(p1: PlayerType, p2: PlayerType, h: i32, w: i32) -> NogoBoard {
-    NogoBoard::new(p1, p2, h, w)
+fn create_board(p1: &PlayerType, p2: &PlayerType, h: i32, w: i32) -> NogoBoard {
+    NogoBoard::new(*p1, *p2, h, w)
 }
 
 /// display the current state of the board
@@ -369,81 +371,91 @@ fn print_tail(n: i32) {
     println!("/\n");
 }
 
-/// update the board state with a player move
-fn update_board(p: char, board: &mut NogoBoard) {
-    let input = io::get_player_move(&board, p);
+///
+/// update the board state with a player move.
+/// the player can be a computer or a human -
+/// accept input or generate moves accordingly
+fn update_board(p_id: char, p_type: &PlayerType, board: &mut NogoBoard) {
+    let (r, c) = match p_type {
+        &PlayerType::COMPUTER => get_next_valid_move(&board, p_id),
+        &PlayerType::HUMAN => io::get_player_move(&board, p_id),
+    };
 
-    if let PlayerInput::Point(r, c) = input {
-        let point = Point::new(r, c, p);
+    let point = Point::new(r, c, p_id);
 
-        board.update_occupied(point.clone());
-        {
-            let player = board.player(p).unwrap();
+    board.update_occupied(point.clone());
+    {
+        let player = board.player(p_id).unwrap();
 
-            // update the strings of the player
-            player.update_strings(point);
-        }
-
-        return;
-    }
-
-    if let PlayerInput::Quit(path) = input {
-        save_game_and_quit(p, path, board);
+        // update the strings of the player
+        player.update_strings(point);
     }
 }
 
-/// save the current state of the game
-/// into the given save file
-fn save_game_and_quit(curr_player: char, path: String, board: &NogoBoard) {
-    let save_data = get_game_state_data(curr_player, &board);
+/// generate the moves for the computer as per
+/// the given algorithm. this will loop until
+/// a valid move is found
+fn get_next_valid_move(board: &NogoBoard, p: char) -> (i32, i32) {
+    let ir = if p == '0' { IR0 } else { IRX };
+    let ic = if p == '0' { IC0 } else { ICX };
+    let f = if p == '0' { F0 } else { FX };
 
-    match io::save_game_state(path.clone(), save_data) {
-        Ok(_) => {
-            println!("Saved game state to file {:?}", path);
-            quit_game();
-        }
-        Err(_) => {
-            eh::exit_with_error(eh::construct_error("error while saving game state to file",
-                                                    eh::NogoErrorKind::CantOpenFileForSaving));
-        }
-    }
-}
+    let gw = board.width();
+    let gh = board.height();
 
-fn get_game_state_data(p: char, board: &NogoBoard) -> Vec<String> {
-    let mut data = Vec::new();
+    let mut r = ir;
+    let mut c = ic;
+    let b = ir * gw + ic;
 
-    // first line - h w p rc0 cc0 cm0 rcX ccX cmX
-    data.push(format!("{} {} {} {} {} {} {} {} {}",
-                      board.height,
-                      board.width,
-                      if p == 'X' { 1 } else { 0 },
-                      0,
-                      0,
-                      0,
-                      0,
-                      0,
-                      0));
+    let mut m = 0;
+    let mut n;
 
-    // the actual board state without the borders
-    let points = board.state.occupied();
+    loop {
+        m += 1;
 
-    for i in 0..board.height {
-        let mut line = String::new();
-
-        for j in 0..board.width {
-            let point = points.iter().find(|&&t| (t.x, t.y) == (i, j));
-
-            if let Some(val) = point {
-                line.push(val.t);
-            } else {
-                line.push('.');
+        let (mut x, mut y) = match m % 5 {
+            0 => {
+                n = (b + m / 5 * f) % MOD_FACTOR;
+                r = n / gw;
+                c = n % gw;
+                (r, c)
             }
-        }
-        data.push(line);
-    }
 
-    data
+            1 => {
+                r += 1;
+                c += 1;
+                (r, c)
+            }
+
+            2 => {
+                r += 2;
+                c += 1;
+                (r, c)
+            }
+
+            3 => {
+                r += 1;
+                (r, c)
+            }
+
+            4 => {
+                c += 1;
+                (r, c)
+            }
+
+            _ => (r, c),
+        };
+
+        x %= gh;
+        y %= gw;
+
+        if eh::validation::validate_user_move(board, (x, y)) {
+            println!("Player {}: {} {}", p, x, y);
+            return (x, y);
+        }
+    }
 }
+
 
 /// check if a winner can be established
 /// to do this, the basic rules of the game
@@ -462,9 +474,4 @@ fn check_winner(board: &NogoBoard) -> Option<&char> {
     }
 
     None
-}
-
-/// safe quit
-fn quit_game() {
-    ::std::process::exit(0);
 }
