@@ -404,7 +404,7 @@ Thank you for playing nogo!
 
 An example of saving the game during play, and then loading it again:
 
-
+```
 $ cargo run c h 5 5
     Finished dev [unoptimized + debuginfo] target(s) in 0.0 secs
      Running `target/debug/nogo c h 5 5`
@@ -520,6 +520,6 @@ Player X> 2 1
 Player X wins!
 
 Thank you for playing nogo!
-
+```
 
 
