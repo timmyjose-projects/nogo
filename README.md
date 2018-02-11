@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/timmyjose/nogo.svg?branch=master)](https://travis-ci.org/timmyjose/nogo)
+
 A simple clone of the Atari Go game.
 
 This game is based on The University of Queensland's School of Information Technology and Electrical Engineering
