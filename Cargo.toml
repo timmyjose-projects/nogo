@@ -2,5 +2,9 @@
 name = "nogo"
 version = "1.0.0"
 authors = ["Timmy Jose <zoltan.jose@gmail.com>"]
+description = """A simple clone of the Atari Go game.This game is based on The University of Queensland's School of Information Technology and Electrical Engineering course CSSE2310/CSSE7231 course assignment."""
+homepage="https://github.com/timmyjose/nogo"
+keywords = ["go", "nogo", "game"]
+license = "MIT"
 
-[dependencies]
+
