@@ -288,7 +288,7 @@ impl Point {
 /// Start a fresh game
 ///
 pub fn start_new_game<'a>(p1: &'a str, p2: &'a str, height: &'a str, width: &'a str) {
-    /// check if the arguments are correct
+    // check if the arguments are correct
     match eh::validation::validate_new_game_parameters(p1, p2, height, width) {
         Ok((p1, p2, h, w)) => {
             let mut board = create_board(&p1, &p2, h, w);

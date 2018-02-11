@@ -148,18 +148,6 @@ fn get_player_type<'a>(p: &str) -> eh::Result<'a, gl::PlayerType> {
     }
 }
 
-fn get_current_player_id<'a>(p_id: &str) -> eh::Result<'a, char> {
-    match p_id {
-        "0" => Ok(gl::PLAYER_ZERO),
-        "x" | "X" => Ok(gl::PLAYER_ONE),
-        _ => {
-            return Err(eh::construct_error("incorrect type specified for current player",
-                                           eh::NogoErrorKind::IncorrectTypes));
-        }
-    }
-}
-
-
 /// parse the rest of the save file to generate
 /// a pair of points for both players
 pub fn parse_player_strings_from_saved_file<'a>
