@@ -6,5 +6,6 @@ description = """A simple clone of the Atari Go game.This game is based on The U
 homepage="https://github.com/timmyjose/nogo"
 keywords = ["go", "nogo", "game"]
 license = "MIT"
+edition = "2018"
 
 
