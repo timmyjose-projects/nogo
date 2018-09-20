@@ -5,8 +5,8 @@ use std::io::{self, Write, BufWriter, BufRead, BufReader};
 use std::fs::File;
 use std::str::FromStr;
 
-use crate::game_logic as gl;
-use crate::error_handling as eh;
+use game_logic as gl;
+use error_handling as eh;
 
 
 /// Get the command line arguments for the
