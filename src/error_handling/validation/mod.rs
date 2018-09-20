@@ -2,8 +2,8 @@
 /// as well as the saved file format.
 
 use std::str::FromStr;
-use error_handling as eh;
-use game_logic as gl;
+use crate::error_handling as eh;
+use crate::game_logic as gl;
 
 
 ///

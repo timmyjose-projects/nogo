@@ -1,8 +1,8 @@
 /// This module contains all the game-related logic
 
 use std::collections::HashSet;
-use error_handling as eh;
-use io;
+use crate::error_handling as eh;
+use crate::io;
 
 
 /// Some game constants
